@@ -43,7 +43,7 @@ const HomePage: React.FC = () => {
       <div className="h-full w-full p-10">
         {loading ? (
           <div className="flex flex-col justify-center items-center h-full">
-              <span className="animate-ping size-10 rounded-full bg-sky-400 opacity-75"></span>
+            <span className="animate-ping size-7 rounded-full bg-sky-400 opacity-75"></span>
             <span className="mt-5">Loading...</span>
           </div>
         ) : (

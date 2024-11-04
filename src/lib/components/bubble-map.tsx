@@ -35,48 +35,42 @@ export const BubbleMap: React.FC<BubbleMapProps> = ({ collections, owners }) => 
                 `;
             });
     }, []);
-
     const renderBubbleMap = useCallback(() => {
         const svg = d3.select(svgRef.current);
         svg.selectAll("*").remove(); // Clear SVG
-
+    
         const width = 800;
         const height = 600;
-        const baseColor = "rgba(70, 130, 180, 0.5)"; // Semi-transparent blue for background
-        const borderColor = "rgba(70, 130, 180, 0.8)"; // Slightly darker blue for border
-
+        const baseColor = "rgba(70, 130, 180, 0.5)";
+        const borderColor = "rgba(70, 130, 180, 0.8)";
+    
         const data = owners.length > 0 ? owners : collections;
-
+    
         const pack = d3.pack()
             .size([width, height])
             .padding(5);
-
+    
         const root = d3.hierarchy<any>({ children: data })
             .sum((d) => d.tokensCount || d.count)
             .sort((a: any, b: any) => (b.tokensCount || b.count) - (a.tokensCount || a.count));
-
+    
         pack(root);
-
+    
         const tip = initTooltip();
         svg.call(tip);
-
+    
         const node = svg
             .append("g")
-            .selectAll("circle")
+            .selectAll("g")
             .data(root.leaves())
-            .join("circle")
-            .attr("cx", (d: any) => d.x)
-            .attr("cy", (d: any) => d.y)
-            .attr("r", (d: any) => d.r)
-            .attr("fill", baseColor)  // Semi-transparent blue fill
-            .attr("stroke", borderColor)  // Darker blue border
-            .attr("stroke-width", 2)  // Border thickness
+            .join("g")
+            .attr("transform", (d: any) => `translate(${d.x},${d.y})`)
             .on("mouseover", function (event, d) {
-                d3.select(this).attr("fill", "orange");
+                d3.select(this).select("circle").attr("fill", "orange");
                 tip.show(d, this);
             })
             .on("mouseout", function () {
-                d3.select(this).attr("fill", baseColor);
+                d3.select(this).select("circle").attr("fill", baseColor);
                 tip.hide();
             })
             .on("click", (event, d) => {
@@ -86,29 +80,29 @@ export const BubbleMap: React.FC<BubbleMapProps> = ({ collections, owners }) => 
                     }).catch(console.error);
                 }
             });
-
-        node.call(
-            (d3 as any).drag()
-                .on("start", (event: any) => {
-                    d3.select(event.sourceEvent.target).raise().attr("stroke", "black");
-                })
-                .on("drag", (event: any, d: any) => {
-                    d3.select(event.sourceEvent.target)
-                        .attr("cx", (d.x = event.x))
-                        .attr("cy", (d.y = event.y));
-                })
-                .on("end", (event: any) => {
-                    d3.select(event.sourceEvent.target).attr("stroke", null);
-                })
-        );
+    
+        node.append("circle")
+            .attr("r", (d: any) => d.r)
+            .attr("fill", baseColor)
+            .attr("stroke", borderColor)
+            .attr("stroke-width", 2);
+    
+        node.append("text")
+            .attr("dy", ".3em") // Center text vertically
+            .attr("text-anchor", "middle") // Center text horizontally
+            .style("font-size", (d: any) => `${Math.min(d.r / 2, 20)}px`) // Scale font size to fit
+            .style("fill", "white")
+            .text((d: any) =>d.data.count || "");
+    
         const zoom = d3.zoom()
             .scaleExtent([0.5, 5])
             .on("zoom", ({ transform }) => {
                 svg.attr("transform", transform);
             });
-
+    
         svg.call(zoom as any);
     }, [collections, owners, initTooltip]);
+    
 
     useEffect(() => {
         renderBubbleMap();
