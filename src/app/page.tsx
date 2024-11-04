@@ -10,7 +10,7 @@ const HomePage: React.FC = () => {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [owners, setOwners] = useState<CollectionOwner[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  
+
   useEffect(() => {
     const fetchCollectionsData = async () => {
       try {
@@ -25,7 +25,7 @@ const HomePage: React.FC = () => {
   }, []);
 
   const handleContractChange = async () => {
-    setLoading(true); // Start loading
+    setLoading(true); 
 
     try {
       const ownersData = await getOwnersByCollection(searchValue);
@@ -34,16 +34,17 @@ const HomePage: React.FC = () => {
       console.error("Error fetching owners:", error);
       setOwners([]);
     } finally {
-      setLoading(false); // Stop loading after data fetch or error
+      setLoading(false); 
     }
   };
 
   return (
     <div className="bg-gradient w-full h-screen overflow-hidden flex">
       <div className="h-full w-full p-10">
-        {loading ? ( // Conditional rendering based on loading state
-          <div className="flex justify-center items-center h-full">
-            <div className="text-white text-2xl">Loading...</div>
+        {loading ? (
+          <div className="flex flex-col justify-center items-center h-full">
+              <span className="animate-ping size-10 rounded-full bg-sky-400 opacity-75"></span>
+            <span className="mt-5">Loading...</span>
           </div>
         ) : (
           <BubbleMap collections={collections} owners={owners} />
@@ -54,7 +55,7 @@ const HomePage: React.FC = () => {
           <h1 className="text-2xl text-white mb-4">Stargaze NFT Collections</h1>
           <input
             type="text"
-            placeholder="Введите адрес контракта коллекции"
+            placeholder="Input creator address"
             className="border-b border-white text-white px-5 py-2 mb-4 rounded rounded-b-none w-full bg-transparent"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
@@ -63,7 +64,7 @@ const HomePage: React.FC = () => {
             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full"
             onClick={() => handleContractChange()}
           >
-            Получить владельцев
+            Get Addresses
           </button>
         </div>
       </div>

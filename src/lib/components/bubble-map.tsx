@@ -16,9 +16,9 @@ export const BubbleMap: React.FC<BubbleMapProps> = ({ collections, owners }) => 
     const svgRef = useRef<SVGSVGElement | null>(null);
 
     const initTooltip = useCallback(() => {
-        return d3Tip()
+        return (d3Tip as any)()
             .attr("class", "d3-tip")
-            .html((d) => {
+            .html((d: any) => {
                 const isOwner = !!d.data.owner;
                 return `
                     <div style="padding: 20px; max-width: 400px; background: black; color: white; border: 1px solid white; border-radius: 12px;">
@@ -53,7 +53,7 @@ export const BubbleMap: React.FC<BubbleMapProps> = ({ collections, owners }) => 
 
         const root = d3.hierarchy<any>({ children: data })
             .sum((d) => d.tokensCount || d.count)
-            .sort((a, b) => (b.tokensCount || b.count) - (a.tokensCount || a.count));
+            .sort((a: any, b: any) => (b.tokensCount || b.count) - (a.tokensCount || a.count));
 
         pack(root);
 
@@ -65,9 +65,9 @@ export const BubbleMap: React.FC<BubbleMapProps> = ({ collections, owners }) => 
             .selectAll("circle")
             .data(root.leaves())
             .join("circle")
-            .attr("cx", (d) => d.x)
-            .attr("cy", (d) => d.y)
-            .attr("r", (d) => d.r)
+            .attr("cx", (d: any) => d.x)
+            .attr("cy", (d: any) => d.y)
+            .attr("r", (d: any) => d.r)
             .attr("fill", baseColor)  // Semi-transparent blue fill
             .attr("stroke", borderColor)  // Darker blue border
             .attr("stroke-width", 2)  // Border thickness
@@ -88,27 +88,26 @@ export const BubbleMap: React.FC<BubbleMapProps> = ({ collections, owners }) => 
             });
 
         node.call(
-            d3.drag<SVGCircleElement, any>()
-                .on("start", (event) => {
+            (d3 as any).drag()
+                .on("start", (event: any) => {
                     d3.select(event.sourceEvent.target).raise().attr("stroke", "black");
                 })
-                .on("drag", (event, d) => {
+                .on("drag", (event: any, d: any) => {
                     d3.select(event.sourceEvent.target)
                         .attr("cx", (d.x = event.x))
                         .attr("cy", (d.y = event.y));
                 })
-                .on("end", (event) => {
+                .on("end", (event: any) => {
                     d3.select(event.sourceEvent.target).attr("stroke", null);
                 })
         );
+        const zoom = d3.zoom()
+            .scaleExtent([0.5, 5])
+            .on("zoom", ({ transform }) => {
+                svg.attr("transform", transform);
+            });
 
-        svg.call(
-            d3.zoom()
-                .scaleExtent([0.5, 5])
-                .on("zoom", ({ transform }) => {
-                    svg.attr("transform", transform);
-                })
-        );
+        svg.call(zoom as any);
     }, [collections, owners, initTooltip]);
 
     useEffect(() => {

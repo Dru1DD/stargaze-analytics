@@ -14,6 +14,17 @@ interface Collection {
   mintedAt: string;
 }
 
+interface CollectionOwner {
+  count: number;
+  owner: {
+    addr: string;
+    name: {
+      name: string;
+      ownerAddr: string;
+    };
+  };
+}
+
 interface GetCollectionsParams {
   limit?: number;
   sortBy?: string;
@@ -28,6 +39,16 @@ interface CollectionsResponse {
     limit: number;
     offset: number;
     total: number;
+  }
+}
+
+interface OwnersResponse {
+  collections: {
+    collections: {
+      owners: {
+        owners: CollectionOwner[]
+      };
+    }
   }
 }
 
@@ -107,7 +128,7 @@ export const getOwnersByCollection = async (creatorAddr: string) => {
     
       const data = await client.request<OwnersResponse>(query, { creatorAddr, offset, limit });
 
-      const fetchedOwners = data?.collections?.collections[0]?.owners?.owners || [];
+      const fetchedOwners = (data as any)?.collections?.collections[0]?.owners?.owners || [];
       owners.push(...fetchedOwners);
       if (fetchedOwners.length < limit) break;
       offset += limit;
