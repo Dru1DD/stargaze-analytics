@@ -14,17 +14,6 @@ interface Collection {
   mintedAt: string;
 }
 
-interface CollectionOwner {
-  count: number;
-  owner: {
-    addr: string;
-    name: {
-      name: string;
-      ownerAddr: string;
-    };
-  };
-}
-
 interface GetCollectionsParams {
   limit?: number;
   sortBy?: string;
@@ -42,15 +31,6 @@ interface CollectionsResponse {
   }
 }
 
-interface OwnersResponse {
-  collections: {
-    collections: {
-      owners: {
-        owners: CollectionOwner[]
-      };
-    }
-  }
-}
 
 export const getCollections = async ({
   limit,
@@ -95,7 +75,6 @@ export const getCollections = async ({
   const data = await client.request<CollectionsResponse>(query, variables);
   return data.collections.collections;
 };
-
 
 export const getOwnersByCollection = async (creatorAddr: string) => {
   const owners: any[] = []; // This will store all owners
@@ -142,6 +121,8 @@ export const getOwnersByCollection = async (creatorAddr: string) => {
   console.log("All Owners:", owners);
   return owners;
 };
+
+
 
 
 

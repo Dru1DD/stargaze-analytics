@@ -19,3 +19,11 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.bg-gradient {
+  background: rgb(2,0,36);
+  background: -moz-linear-gradient(190deg, rgba(2,0,36,1) 0%, rgba(31,30,47,1) 12%, rgba(56,56,56,1) 51%);
+  background: -webkit-linear-gradient(190deg, rgba(2,0,36,1) 0%, rgba(31,30,47,1) 12%, rgba(56,56,56,1) 51%);
+  background: linear-gradient(190deg, rgba(2,0,36,1) 0%, rgba(31,30,47,1) 12%, rgba(56,56,56,1) 51%);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#020024",endColorstr="#383838",GradientType=1);
+}
