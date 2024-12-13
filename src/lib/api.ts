@@ -1,150 +1,142 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { GraphQLClient, gql } from 'graphql-request';
+import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 
-const client = new GraphQLClient('https://constellations-api.mainnet.stargaze-apis.com/graphql');
+const STARGAZE_GRAPH_URL = "https://graphql.mainnet.stargaze-apis.com/graphql";
+const client = new ApolloClient({
+  uri: STARGAZE_GRAPH_URL,
+  cache: new InMemoryCache(),
+});
 
-interface Collection {
-  image: string;
-  description: string;
-  tokensCount: number;
-  website: string;
-  createdAt: string;
-  collectionAddr: string;
-  name: string;
-  mintedAt: string;
-}
-
-interface CollectionOwner {
-  count: number;
+type TokenOwner = {
   owner: {
-    addr: string;
-    name: {
-      name: string;
-      ownerAddr: string;
-    };
+    address: string;
   };
-}
-
-interface GetCollectionsParams {
-  limit?: number;
-  sortBy?: string;
-  offset?: number;
-  tokenOwnerAddr?: string;
-  creatorAddr?: string;
-}
-
-interface CollectionsResponse {
-  collections: {
-    collections: Collection[];
-    limit: number;
-    offset: number;
-    total: number;
-  }
-}
-
-interface OwnersResponse {
-  collections: {
-    collections: {
-      owners: {
-        owners: CollectionOwner[]
-      };
-    }
-  }
-}
-
-
-export const getCollections = async ({
-  limit,
-  sortBy,
-  offset,
-  tokenOwnerAddr,
-  creatorAddr
-}: GetCollectionsParams = {}): Promise<Collection[]> => {
-  const query = gql`
-    query Collections($limit: Int, $sortBy: CollectionSortBy, $offset: Int, $tokenOwnerAddr: String, $creatorAddr: String) {
-      collections(limit: $limit, sortBy: $sortBy, offset: $offset, tokenOwnerAddr: $tokenOwnerAddr, creatorAddr: $creatorAddr) {
-        collections {
-          image
-          description
-          tokensCount
-          website
-          createdAt
-          collectionAddr
-          name
-          mintedAt
-          owners {
-            totalCount
-            owners {
-              count
-              owner {
-                addr
-                name {
-                  name
-                  ownerAddr
-                }
-              }
-            }
-          }
-        }
-        limit
-        offset
-        total
-      }
-    }
-  `;
-  const variables = { limit, sortBy, offset, tokenOwnerAddr, creatorAddr };
-  const data = await client.request<CollectionsResponse>(query, variables);
-  return data.collections.collections;
 };
 
-export const getOwnersByCollection = async (creatorAddr: string) => {
-  const owners: any[] = []; // This will store all owners
-  let offset = 0; 
+type TokensData = {
+  tokens: {
+    tokens: TokenOwner[];
+  };
+};
+
+type Collection = {
+  name: string;
+  description: string;
+  contractAddress: string;
+  floor: {
+    amountUsd: number;
+  };
+  tokenCounts: {
+    total: number;
+  };
+  creator: {
+    address: string;
+  }
+};
+
+
+type CollectionsData = {
+  collections: {
+    collections: Collection[]
+  };
+};
+
+
+const GET_COLLECTION_OWNER = gql`
+  query Collections($searchQuery: String, $limit: Int) {
+    collections(searchQuery: $searchQuery, limit: $limit) {
+      collections {
+        name
+        description
+        contractAddress
+        floor {
+          amountUsd
+        }
+        creator {
+          address
+        }
+        tokenCounts {
+          total
+        }
+      }
+    }
+  }
+`;
+
+const GET_TOKENS_BY_COLLECTION_ADDRESS = gql`
+query Tokens($collectionAddr: String!, $limit: Int, $offset: Int) {
+  tokens(collectionAddr: $collectionAddr, limit: $limit, offset: $offset) {
+    tokens {
+      owner {
+        address
+      }
+    }
+  }
+}
+`;
+
+export const getOwnerByCollectionName = async (collectionName: string) => {
+  const { data: collectionsData } = await client.query<CollectionsData>({
+    query: GET_COLLECTION_OWNER,
+    variables: {
+      searchQuery: collectionName,
+      limit: 1,
+    }
+  })
+
+  const collection = collectionsData.collections.collections[0];
+
+  if (!collection) {
+    console.error('Collection not found');
+    return [];
+  }
+
+  const contract_address = collection.contractAddress;
+  const total_count = collection.tokenCounts.total;
+
+  let allTokens: any[] = [];
+  let fetchedTokens: any[] | null = null;
+  let offset: number = 0;
   const limit = 100;
 
-  while (true) {
-    const query = gql`
-      query CollectionOwners($creatorAddr: String, $offset: Int, $limit: Int) {
-        collections(creatorAddr: $creatorAddr) {
-          collections {
-            collectionAddr
-            owners (offset: $offset, limit: $limit) {
-              owners {
-                owner {
-                  addr
-                  name {
-                    name
-                  }
-                }
-                count
-              }
-            }
-          }
-        }
+
+  while (allTokens.length < total_count && (fetchedTokens === null || fetchedTokens.length > 0)) {
+    const { data: tokensData } = await client.query<TokensData>({
+      query: GET_TOKENS_BY_COLLECTION_ADDRESS,
+      variables: {
+        collectionAddr: contract_address,
+        limit: limit,
+        offset: offset 
       }
-    `;
+    });
+    fetchedTokens = tokensData.tokens.tokens;
 
-    try {
-    
-      const data = await client.request<OwnersResponse>(query, { creatorAddr, offset, limit });
-
-      const fetchedOwners = (data as any)?.collections?.collections[0]?.owners?.owners || [];
-      owners.push(...fetchedOwners);
-      if (fetchedOwners.length < limit) break;
-      offset += limit;
-
-    } catch (error) {
-      console.error("Error fetching owners:", error);
+    if (!fetchedTokens || fetchedTokens.length === 0) {
+      console.warn("No more tokens to fetch. Exiting loop.");
       break;
     }
+
+    allTokens = allTokens.concat(fetchedTokens);
+    offset += limit; 
   }
 
-  console.log("All Owners:", owners);
-  return owners;
-};
+  const ownerMap = allTokens.reduce((acc, token) => {
+    const ownerAddr = token.owner.address;
+    if (!acc[ownerAddr]) {
+      acc[ownerAddr] = 0;
+    }
+    acc[ownerAddr]++;
+    return acc;
+  }, {} as Record<string, number>);
 
 
-
+  return Object.entries(ownerMap).map(([addr, count]) => ({
+    count,
+    owner: {
+      addr,
+    },
+  }));
+}
 
 
 export const formatIpfsLink = (ipfsLink: string): string => {

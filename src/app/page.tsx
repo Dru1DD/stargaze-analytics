@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getCollections, getOwnersByCollection } from "@/lib/api";
+import { getOwnerByCollectionName } from "@/lib/api";
 import { Collection, CollectionOwner } from "@/lib/types";
 import { BubbleMap } from "@/lib/components/bubble-map";
 
@@ -14,8 +14,7 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     const fetchCollectionsData = async () => {
       try {
-        const collectionsData = await getCollections({ limit: 10000 });
-        setCollections(collectionsData);
+        setCollections([]);
       } catch (error) {
         console.error("Error fetching collections:", error);
       }
@@ -28,8 +27,8 @@ const HomePage: React.FC = () => {
     setLoading(true); 
 
     try {
-      const ownersData = await getOwnersByCollection(searchValue);
-      setOwners(ownersData);
+      const ownersData = await getOwnerByCollectionName(searchValue);
+      setOwners(ownersData as CollectionOwner[]);
     } catch (error) {
       console.error("Error fetching owners:", error);
       setOwners([]);
