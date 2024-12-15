@@ -39,12 +39,14 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="bg-gradient w-full h-screen overflow-hidden flex">
-      <div className="h-full w-full p-10">
+      <div className="h-full w-full">
         {loading ? (
-          <div className="flex flex-col justify-center items-center h-full">
-            <span className="animate-ping size-7 rounded-full bg-sky-400 opacity-75"></span>
-            <span className="mt-5">Loading...</span>
-          </div>
+             <div className="w-full h-full flex justify-center items-center">
+               <div id="loaderContainer">
+                   <div className="loader" id="loader"></div>
+                   <div id="loaderText">Loading...</div>
+               </div>
+               </div>
         ) : (
           <BubbleMap collections={collections} owners={owners} />
         )}

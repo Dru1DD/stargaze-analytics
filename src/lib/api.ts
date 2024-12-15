@@ -2,22 +2,18 @@
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 
 const STARGAZE_GRAPH_URL = "https://graphql.mainnet.stargaze-apis.com/graphql";
+const CONSTELLATIONS_GRAPH_URL = "https://constellations-api.mainnet.stargaze-apis.com/graphql";
+
 const client = new ApolloClient({
   uri: STARGAZE_GRAPH_URL,
   cache: new InMemoryCache(),
 });
 
-type TokenOwner = {
-  owner: {
-    address: string;
-  };
-};
+const constellation_client = new ApolloClient({
+  uri: CONSTELLATIONS_GRAPH_URL,
+  cache: new InMemoryCache()
+});
 
-type TokensData = {
-  tokens: {
-    tokens: TokenOwner[];
-  };
-};
 
 type Collection = {
   name: string;
@@ -63,26 +59,34 @@ const GET_COLLECTION_OWNER = gql`
   }
 `;
 
-const GET_TOKENS_BY_COLLECTION_ADDRESS = gql`
-query Tokens($collectionAddr: String!, $limit: Int, $offset: Int) {
-  tokens(collectionAddr: $collectionAddr, limit: $limit, offset: $offset) {
-    tokens {
-      owner {
-        address
+const GET_TOKENS_BY_COLLECTION_ADDRESS =  gql`
+query CollectionOwners($collectionAddr: String, $offset: Int, $limit: Int) {
+    collection(collectionAddr: $collectionAddr) {
+      owners (offset: $offset, limit: $limit) {
+        owners {
+          owner {
+            addr
+            name {
+              name
+            }
+          }
+          count
+        }
       }
-    }
   }
 }
-`;
+`;;
 
 export const getOwnerByCollectionName = async (collectionName: string) => {
   const { data: collectionsData } = await client.query<CollectionsData>({
     query: GET_COLLECTION_OWNER,
     variables: {
       searchQuery: collectionName,
-      limit: 1,
+      limit: 100,
     }
   })
+
+  console.log("data", collectionsData)
 
   const collection = collectionsData.collections.collections[0];
 
@@ -92,52 +96,37 @@ export const getOwnerByCollectionName = async (collectionName: string) => {
   }
 
   const contract_address = collection.contractAddress;
-  const total_count = collection.tokenCounts.total;
 
-  let allTokens: any[] = [];
-  let fetchedTokens: any[] | null = null;
-  let offset: number = 0;
-  const limit = 100;
-
-
-  while (allTokens.length < total_count && (fetchedTokens === null || fetchedTokens.length > 0)) {
-    const { data: tokensData } = await client.query<TokensData>({
-      query: GET_TOKENS_BY_COLLECTION_ADDRESS,
-      variables: {
-        collectionAddr: contract_address,
-        limit: limit,
-        offset: offset 
-      }
-    });
-    fetchedTokens = tokensData.tokens.tokens;
-
-    if (!fetchedTokens || fetchedTokens.length === 0) {
-      console.warn("No more tokens to fetch. Exiting loop.");
-      break;
-    }
-
-    allTokens = allTokens.concat(fetchedTokens);
-    offset += limit; 
-  }
-
-  const ownerMap = allTokens.reduce((acc, token) => {
-    const ownerAddr = token.owner.address;
-    if (!acc[ownerAddr]) {
-      acc[ownerAddr] = 0;
-    }
-    acc[ownerAddr]++;
-    return acc;
-  }, {} as Record<string, number>);
-
-
-  return Object.entries(ownerMap).map(([addr, count]) => ({
-    count,
-    owner: {
-      addr,
-    },
-  }));
+  console.log("contract_address", contract_address);
+  const owners = getOwnersByCollection(contract_address)
+  return owners;
 }
 
+
+const getOwnersByCollection = async (collectionAddr: string) => {
+  const owners: any[] = []; 
+  let offset = 0; 
+  const limit = 100;
+
+  while (true) {
+    try {
+      const data = await constellation_client.query({
+        query: GET_TOKENS_BY_COLLECTION_ADDRESS, 
+        variables: { collectionAddr, offset, limit }
+      });
+      
+      const fetchedOwners = (data as any)?.data.collection.owners.owners || [];
+      owners.push(...fetchedOwners);
+      
+      if (fetchedOwners.length < limit) break;
+      offset += limit;
+    } catch (error) {
+      console.error("Error fetching owners:", error);
+      break;
+    }
+  }
+  return owners;
+};
 
 export const formatIpfsLink = (ipfsLink: string): string => {
   if (ipfsLink.startsWith("ipfs://")) {
