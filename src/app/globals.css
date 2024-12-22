@@ -94,3 +94,15 @@ body {
       clip-path: polygon(50% 50%, 0 0, 100% 0, 100% 100%, 0 100%, 0 0);
   }
 }
+
+.border-class {
+  border: 0.25px solid white;
+}
+
+.border-bottom {
+  border-bottom: none;
+}
+
+.gray-color {
+  background-color: #1f2937;
+}

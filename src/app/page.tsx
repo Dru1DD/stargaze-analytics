@@ -15,6 +15,7 @@ import { Collection, CollectionOwner } from "@/lib/types";
 import { BubbleMap } from "@/lib/components/bubble-map";
 import { LeftArrow } from "@/lib/components/left-arrow";
 import { useRouter } from "next/navigation";
+import { CustomSelect } from "@/lib/components/custom-select/custom-select";
 
 enum SearchType {
   NAME,
@@ -138,23 +139,23 @@ const HomePage: React.FC = () => {
       {!isShowContent ? (
         <div className="h-full w-full bg-gray-800 flex justify-center items-center">
           <div className="bg-gray-800 p-5 rounded-lg shadow-2xl w-full lg:w-[400px]">
-            <h1 className="text-2xl text-white mb-4">
+            <h1 className="text-2xl text-white mb-5">
               Stargaze NFT Collections
             </h1>
             {error && <div className="text-red-500">{error}</div>}
-            <select
-              className="border-b border-white text-white my-4 py-2 px-4 bg-transparent w-full transition-all duration-300 hover:bg-gray-700"
+            <CustomSelect
+              options={[
+                { value: SearchType.NAME, label: 'By collection name' },
+                { value: SearchType.CONTRACT, label: 'By collection address' },
+              ]}
               value={searchType}
-              onChange={(e) => {
-                setSearchType(Number(e.target.value));
-                setSearchValue("");
+              onChange={(value) => {
+                setSearchType(value);
+                setSearchValue('');
                 setShowSuggestions(false);
               }}
-            >
-              <option value={SearchType.NAME}>By collection name</option>
-              <option value={SearchType.CONTRACT}>By collection address</option>
-            </select>
-            <div className="relative">
+            />
+            <div className="relative mt-5">
               <input
                 type="text"
                 placeholder="Input creator address or collection name"
