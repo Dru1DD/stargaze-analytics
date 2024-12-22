@@ -87,6 +87,34 @@ query CollectionOwners($collectionAddr: String, $offset: Int, $limit: Int) {
 }
 `;
 
+const GET_COLLECTION_INFO = gql`
+query CollectionInfo($collectionAddr: String!) {
+    collection(collectionAddr: $collectionAddr) {
+      image
+      name
+      description
+    }
+}
+`;
+
+export const getCollectionInfo = async (collectionAddr: string) => {
+  const data = await constellation_client.query({
+    query: GET_COLLECTION_INFO,
+    variables: { collectionAddr }
+  });
+  return data.data.collection;
+}
+export const getCollectionsAddresses = async(collectionName: string) => {
+  const { data: collectionsData } = await client.query<CollectionsData>({
+    query: GET_COLLECTION_OWNER,
+    variables: {
+      searchQuery: collectionName,
+      limit: 100,
+    }
+  })
+
+  return collectionsData.collections.collections;
+}
 
 export const getOwnerByCollectionName = async (collectionName: string) => {
   const { data: collectionsData } = await client.query<CollectionsData>({
@@ -96,8 +124,6 @@ export const getOwnerByCollectionName = async (collectionName: string) => {
       limit: 100,
     }
   })
-
-  console.log("data", collectionsData)
 
   const collection = collectionsData.collections.collections[0];
 
@@ -119,7 +145,6 @@ export const getOwnersByCollectionAddress = async (collectionAddr: string) => {
   let offset = 0;
   const limit = 100;
 
-  console.log("collectionaddress", collectionAddr)
   while (true) {
     try {
       const data = await constellation_client.query({

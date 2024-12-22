@@ -50,11 +50,13 @@ export const BubbleMap: React.FC<BubbleMapProps> = ({
                 `;
       });
   }, []);
+
   const renderBubbleMap = useCallback(() => {
     const svg = d3.select(svgRef.current);
-    svg.selectAll("*").remove(); // Clear SVG
+    svg.selectAll("*").remove();
 
-    const width = 800;
+    // @ts-ignore
+    const width = svg.node()?.parentNode?.clientWidth || 800;
     const height = 600;
     const baseColor = "rgba(70, 130, 180, 0.5)";
     const borderColor = "rgba(70, 130, 180, 0.8)";
@@ -76,7 +78,6 @@ export const BubbleMap: React.FC<BubbleMapProps> = ({
     const tip = initTooltip();
     svg.call(tip);
 
-    // Создаём контейнерную группу для зума
     const container = svg.append("g");
 
     const node = container
@@ -120,12 +121,61 @@ export const BubbleMap: React.FC<BubbleMapProps> = ({
 
     const zoom = d3
       .zoom()
-      .scaleExtent([0.5, 5]) // Ограничиваем масштабирование
+      .scaleExtent([0.5, 5])
       .on("zoom", (event) => {
-        container.attr("transform", event.transform); // Применяем трансформацию к контейнерной группе
+        container.attr("transform", event.transform);
       });
 
-    svg.call(zoom as any);
+    svg.call(zoom as any).on("dblclick.zoom", null);
+
+    svg
+      .attr("viewBox", `0 0 ${width} ${height}`)
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .style("width", "100%")
+      .style("height", "auto");
+
+    let touchStartX: number = 0;
+    let touchStartY: number = 0;
+    let currentTransform = d3.zoomIdentity;
+
+    svg.on("touchstart", (event) => {
+      const touch = event.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    });
+
+    svg.on("touchmove", (event) => {
+      event.preventDefault();
+      const touch = event.touches[0];
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+
+      currentTransform = currentTransform.translate(deltaX, deltaY);
+      container.attr(
+        "transform",
+        `translate(${currentTransform.x}, ${currentTransform.y})`
+      );
+    });
+
+    svg.on("touchend", () => {
+      const node = svg.node();
+      if (node) {
+        d3.zoomTransform(node).translate(
+          currentTransform.x,
+          currentTransform.y
+        );
+      }
+    });
+
+    const tooltipElements = document.querySelectorAll(".d3-tip");
+    tooltipElements.forEach((el) => {
+      el.setAttribute(
+        "style",
+        "pointer-events: none; z-index: 1000; font-size: 16px; padding: 10px;"
+      );
+    });
   }, [collections, owners, initTooltip]);
 
   useEffect(() => {

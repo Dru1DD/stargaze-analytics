@@ -6,6 +6,7 @@ export interface Collection {
     website: string;
     createdAt: string;
     collectionAddr: string;
+    contractAddress?: string;
     name: string;
     mintedAt: string;
 }
