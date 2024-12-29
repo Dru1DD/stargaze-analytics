@@ -106,3 +106,8 @@ body {
 .gray-color {
   background-color: #1f2937;
 }
+
+.text-white {
+  color: #ffffff !important;
+  opacity: 1;
+}
