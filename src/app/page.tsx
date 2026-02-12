@@ -15,7 +15,8 @@ import { Collection, CollectionOwner } from "@/lib/types";
 import { BubbleMap } from "@/lib/components/bubble-map";
 import { LeftArrow } from "@/lib/components/left-arrow";
 import { useRouter } from "next/navigation";
-import { CustomSelect } from "@/lib/components/custom-select/custom-select";
+import { CustomSelect } from "@/lib/components/custom-select";
+import { Loader } from "@/lib/components/loader";
 
 enum SearchType {
   NAME,
@@ -195,16 +196,9 @@ const HomePage: React.FC = () => {
         </div>
       ) : (
         <div className="h-full w-full">
-          {loading ? (
-            <div className="w-full h-full flex justify-center items-center">
-              <div id="loaderContainer">
-                <div className="loader" id="loader"></div>
-                <div id="loaderText">Loading...</div>
-              </div>
-            </div>
-          ) : (
+          {loading ? <Loader /> : (
             <>
-              <div className="absolute top-0 w-full h-20 bg-black flex flex-row justify-between items-center px-10">
+              <div className="absolute top-0 w-full h-20 bg-black flex flex-row justify-between items-center px-2 lg:px-10">
                 <div
                   className="cursor-pointer hover:underline"
                   onClick={() => setIsShowContent(false)}
