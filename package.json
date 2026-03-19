@@ -13,13 +13,14 @@
     "@apollo/client": "^3.11.10",
     "d3": "^7.9.0",
     "d3-tip": "^0.9.1",
+    "flatted": "^3.4.2",
     "graphql": "^16.9.0",
     "graphql-request": "^7.1.2",
     "itty-router": "^5.0.18",
+    "minimatch": ">=10.2.1",
     "next": "16.1.6",
     "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "minimatch": ">=10.2.1"
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@types/d3": "^7.4.3",
